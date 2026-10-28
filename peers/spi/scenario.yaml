@@ -1,4 +1,4 @@
-# SPI: the good and the malicious peer on the same wiring, as two machines running
+# SPI: the good and the faulty peer on the same wiring, as two machines running
 # YOUR firmware (not shipped). Run from this directory:
 #   sim --scenario scenario.yaml --timeout 12
 # Change mcu, bus, pins and baud to match your firmware.
@@ -8,8 +8,8 @@ machines:
     elf: firmware.elf
     parts:
       - { name: imu, type: spi-device, bus: spi1, cs: PC4, script: good_icm42688.py }
-  malicious:
+  faulty:
     mcu: STM32H753IITX
     elf: firmware.elf
     parts:
-      - { name: imu, type: spi-device, bus: spi1, cs: PC4, script: malicious_icm42688.py }
+      - { name: imu, type: spi-device, bus: spi1, cs: PC4, script: faulty_icm42688.py }

@@ -1,4 +1,4 @@
-# CAN: the good and the malicious peer on the same wiring, as two machines running
+# CAN: the good and the faulty peer on the same wiring, as two machines running
 # YOUR firmware (not shipped). Run from this directory:
 #   sim --scenario scenario.yaml --timeout 12
 # Change mcu, bus, pins and baud to match your firmware.
@@ -8,11 +8,11 @@ machines:
     elf: firmware.elf
     parts:
       - { name: node, type: can-node, script: good_dronecan.py }
-  malicious:
+  faulty:
     mcu: STM32H753IITX
     elf: firmware.elf
     parts:
-      - { name: node, type: can-node, script: malicious_echo.py }
+      - { name: node, type: can-node, script: faulty_echo.py }
 media:
   - { type: can, connect: [good.fdcan1, good.node] }
-  - { type: can, connect: [malicious.fdcan1, malicious.node] }
+  - { type: can, connect: [faulty.fdcan1, faulty.node] }

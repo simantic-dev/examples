@@ -3,7 +3,7 @@
 Each peer under peers/ is loaded by path and driven through the same callback
 sequence the engine uses, with a mock `ctx`. Good peers are checked against
 known-answer vectors computed here from the specs (not by calling the peer's
-own helpers); malicious peers are checked to really produce their fault.
+own helpers); faulty peers are checked to really produce their fault.
 
     pytest tests/test_peer_mocks.py
 """
@@ -163,8 +163,8 @@ def test_crsf_rc_frame_known_answer():
     assert [(bits >> (11 * i)) & 0x7FF for i in range(16)] == mod.CHANNELS
 
 
-def test_malicious_uart_faults_in_order():
-    p, ctx, mod = load("uart/malicious_uart.py", "Peer")
+def test_faulty_uart_faults_in_order():
+    p, ctx, mod = load("uart/faulty_uart.py", "Peer")
     for _ in range(6):
         p.on_timer()
     ok, badcrc, trunc, junk, badlen = payloads(ctx)       # tick 5 is silence: nothing sent
@@ -176,8 +176,8 @@ def test_malicious_uart_faults_in_order():
     assert badlen[1] == 0xFF and len(badlen) == 26
 
 
-def test_malicious_uart_late_then_never_reply_and_link_loss():
-    p, ctx, _ = load("uart/malicious_uart.py", "Peer")
+def test_faulty_uart_late_then_never_reply_and_link_loss():
+    p, ctx, _ = load("uart/faulty_uart.py", "Peer")
     p.on_byte(0x3F)                                       # request 1: answered late
     for _ in range(75):
         p.on_timer()
@@ -290,8 +290,8 @@ def tf_frame(dist, strength, head=b"\x59\x59"):
     return body, sum(body) % 256
 
 
-def test_tf02_malicious_phases():
-    s, ctx, _ = load("i2c/malicious_tf02.py", "Slave")
+def test_tf02_faulty_phases():
+    s, ctx, _ = load("i2c/faulty_tf02.py", "Slave")
     trig = bytes((0x5A, 0x05, 0x00, 0x01, 0x60))
     out = []
     for _ in range(5):
@@ -329,8 +329,8 @@ def test_icm42688_good_who_am_i_and_first_fifo_packet():
     assert pkt == bytes([0x68]) + struct.pack(">6h", ax, 0, az, 0, 0, 0) + b"\x00" + struct.pack(">H", 30_000)
 
 
-def test_malicious_icm42688_faults():
-    s, ctx, _ = load("spi/malicious_icm42688.py", "Slave")
+def test_faulty_icm42688_faults():
+    s, ctx, _ = load("spi/faulty_icm42688.py", "Slave")
     assert spi(s, [0xF5, 0])[1] == 0x42                   # wrong WHO_AM_I
     assert spi(s, [0xAE, 0, 0])[1:] == b"\x00\x04"        # claims 4 records
     pkt = spi(s, [0xB0] + [0] * 16)[1:]
@@ -364,8 +364,8 @@ def test_dronecan_allocation_then_nodestatus():
     assert data == struct.pack("<IBH", 1, 0, 0) + b"\xc3"
 
 
-def test_malicious_can_echo_rotation():
-    n, ctx, _ = load("can/malicious_echo.py", "Node")
+def test_faulty_can_echo_rotation():
+    n, ctx, _ = load("can/faulty_echo.py", "Node")
     for _ in range(5):
         n.on_frame({"id": 0x123, "data": b"\x01\x02\x03\x04", "extended": False})
     got = [(a[0], a[1]) for a, _ in ctx.sent]
@@ -425,8 +425,8 @@ def test_udp_echo_ignores_a_bad_ip_checksum():
     assert ctx.sent == []
 
 
-def test_malicious_eth_sequence():
-    p, ctx, _ = load("eth/malicious_frames.py", "Peer")
+def test_faulty_eth_sequence():
+    p, ctx, _ = load("eth/faulty_frames.py", "Peer")
     for _ in range(7):
         p.on_timer()
     assert ctx.order == ["send", "wire", "send", "send", "send", "send", "send"]

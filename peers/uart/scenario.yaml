@@ -1,4 +1,4 @@
-# UART: the good and the malicious peer on the same wiring, as two machines running
+# UART: the good and the faulty peer on the same wiring, as two machines running
 # YOUR firmware (not shipped). Run from this directory:
 #   sim --scenario scenario.yaml --timeout 12
 # Change mcu, bus, pins and baud to match your firmware.
@@ -8,11 +8,11 @@ machines:
     elf: firmware.elf
     parts:
       - { name: rc, type: uart-device, baud: 420000, script: good_crsf.py }
-  malicious:
+  faulty:
     mcu: STM32H753IITX
     elf: firmware.elf
     parts:
-      - { name: rc, type: uart-device, baud: 420000, script: malicious_uart.py }
+      - { name: rc, type: uart-device, baud: 420000, script: faulty_uart.py }
 media:
   - { type: uart, connect: [good.uart4, good.rc] }
-  - { type: uart, connect: [malicious.uart4, malicious.rc] }
+  - { type: uart, connect: [faulty.uart4, faulty.rc] }
