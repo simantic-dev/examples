@@ -25,6 +25,7 @@ class Ctx:
         self.wire = []       # ctx.send_wire payloads
         self.order = []      # "send"/"wire", in call order
         self.timers = []     # ("periodic"|"oneshot"|"cancel", us)
+        self.pins = []       # (line, level) of ctx.gpio(line).set(level)
 
     def send(self, *a, **k):
         self.sent.append((a, k))
@@ -42,6 +43,14 @@ class Ctx:
 
     def cancel_timer(self):
         self.timers.append(("cancel", 0))
+
+    def gpio(self, line):
+        ctx = self
+
+        class Pin:
+            def set(self, level):
+                ctx.pins.append((line, level))
+        return Pin()
 
     def log(self, *a):
         pass
@@ -231,6 +240,49 @@ def test_icp20100_pressure_pair_known_answer():
     p, t = 99614, -12098                                  # (100.4-70)*2^17/40, (22-25)*2^18/65, truncated
     exp = bytes((p & 0xFF, p >> 8 & 0xFF, p >> 16, t & 0xFF, t >> 8 & 0xFF, (t >> 16) & 0x0F))
     assert read_reg(s, 0xFA, 6) == exp
+
+
+def test_lis2dw12_drdy_raises_int1_at_the_programmed_odr():
+    s, ctx, _ = load("i2c/good_lis2dw12.py", "Slave")
+    assert read_reg(s, 0x0F, 1) == b"\x44"                # WHO_AM_I
+    s.on_write(bytes([0x23, 0x01]))                       # CTRL4: INT1_DRDY
+    s.on_finish()
+    s.on_write(bytes([0x20, 0x54]))                       # CTRL1: ODR 100 Hz, high-performance
+    s.on_finish()
+    assert ctx.timers[-1] == ("periodic", 10_000)
+    assert ctx.pins[-1] == (0, False)
+    s.on_timer()
+    assert ctx.pins[-1] == (0, True)                      # data ready on INT1
+    assert read_reg(s, 0x27, 1)[0] & 1
+    z = 16384                                             # 1 g at +-2 g full scale, 16-bit left-aligned
+    assert read_reg(s, 0x28, 6) == bytes(4) + z.to_bytes(2, "little")
+    assert ctx.pins[-1] == (0, False)                     # reading OUT_Z_H clears DRDY
+    s.on_write(bytes([0x22, 0x08]))                       # CTRL3: H_LACTIVE
+    s.on_finish()
+    assert ctx.pins[-1] == (0, True)                      # idle level is now high
+
+
+def test_lis2dw12_fifo_threshold_and_overrun():
+    s, ctx, _ = load("i2c/good_lis2dw12.py", "Slave")
+    s.on_write(bytes([0x23, 0x02]))                       # CTRL4: INT1_FTH
+    s.on_finish()
+    s.on_write(bytes([0x2E, (1 << 5) | 4]))               # FIFO mode, threshold 4
+    s.on_finish()
+    s.on_write(bytes([0x25, 0x10]))                       # CTRL6: +-4 g
+    s.on_finish()
+    for _ in range(3):
+        s.on_timer()
+    assert read_reg(s, 0x2F, 1) == bytes([3])
+    assert ctx.pins[-1] == (0, False)
+    s.on_timer()
+    assert ctx.pins[-1] == (0, True)
+    assert read_reg(s, 0x2F, 1) == bytes([0x84])          # 4 samples, FIFO_FTH
+    one = bytes(4) + (8192 & 0xFFF0).to_bytes(2, "little")   # 1 g at +-4 g, 12-bit low-power
+    assert read_reg(s, 0x28, 12) == one * 2               # two samples popped in one burst
+    assert read_reg(s, 0x2F, 1) == bytes([2])
+    for _ in range(40):
+        s.on_timer()
+    assert read_reg(s, 0x2F, 1) == bytes([0x80 | 0x40 | 32])   # full, overrun, threshold
 
 
 def tf_frame(dist, strength, head=b"\x59\x59"):
