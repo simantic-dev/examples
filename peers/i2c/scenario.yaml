@@ -8,6 +8,7 @@ machines:
     elf: firmware.elf
     parts:
       - { name: pwr, type: i2c-device, bus: i2c1, address: 0x45, script: good_ina228.py }
+      - { name: accel, type: i2c-device, bus: i2c1, address: 0x18, script: good_lis2dw12.py, irq: PC13 }  # INT1 on your EXTI pin
   faulty:
     mcu: STM32H753IITX
     elf: firmware.elf

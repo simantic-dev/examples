@@ -38,7 +38,7 @@ python -m pytest tests
 | Bus | Good peer | Faulty peer |
 | --- | --- | --- |
 | UART | `peers/uart/good_gps.py`: u-blox UBX GPS, ACKs CFG-VALSET, streams NAV-PVT at the rate the firmware programs. `peers/uart/good_crsf.py`: CRSF RC frames at 250 Hz, crc8 DVB-S2, 420 kbaud. | `peers/uart/faulty_uart.py`: CRSF-style link with bad CRC, truncated frames, garbage, bad length, a late then missing reply, then permanent silence. |
-| I2C | `peers/i2c/good_icp20100.py`: TDK ICP-20100 barometer, register file and FIFO. `peers/i2c/good_ina228.py`: TI INA228 power monitor, conversion time from the firmware's ADC_CONFIG and SHUNT_CAL. | `peers/i2c/faulty_tf02.py`: TF02-Pro-style LiDAR with a wrong ID, bad checksum, bad header, out-of-range and stuck readings. |
+| I2C | `peers/i2c/good_icp20100.py`: TDK ICP-20100 barometer, register file and FIFO. `peers/i2c/good_ina228.py`: TI INA228 power monitor, conversion time from the firmware's ADC_CONFIG and SHUNT_CAL. `peers/i2c/good_lis2dw12.py`: ST LIS2DW12 accelerometer, samples at the ODR the firmware programs, 32-deep FIFO, data-ready / FIFO-threshold interrupt on INT1 (`irq:` pin). | `peers/i2c/faulty_tf02.py`: TF02-Pro-style LiDAR with a wrong ID, bad checksum, bad header, out-of-range and stuck readings. |
 | SPI | `peers/spi/good_icm42688.py`: TDK ICM-42688-P IMU, registers, FIFO, ODR from the firmware's config. | `peers/spi/faulty_icm42688.py`: wrong WHO_AM_I, FIFO that reports a count but returns empty packets, stuck gyro, bit-flipped accel. |
 | CAN | `peers/can/good_dronecan.py`: DroneCAN anonymous node-ID allocation, then 1 Hz NodeStatus. | `peers/can/faulty_echo.py`: echoes each frame with a flipped last byte, wrong ID, short DLC, long DLC, then once clean. |
 | Ethernet | `peers/eth/good_arp_udp.py`: answers ARP, echoes UDP on port 7 with correct IPv4 and UDP checksums. | `peers/eth/faulty_frames.py`: bad FCS, runt, foreign MAC, bad IPv4 checksum, bad UDP checksum, between good frames. |
@@ -57,6 +57,9 @@ Limits to know about:
   addresses in it (`DUT_MAC`, `DUT_IP`) are constants to set to your firmware's.
   In 0.6.6 an `eth-peer` must be a `parts:` entry; declaring
   `Network.ScriptedEthernetPeer` in an overlay fails registration.
+- A peer drives an interrupt line with `ctx.gpio(n).set(level)`; the part's
+  `irq:` key wires it to an MCU pin. The level change lands at the peer's next
+  tick, not inside the bus callback.
 - A peer's `ctx` has a single timer, so peers that need several delays count
   ticks of one periodic timer. The UART peer ctx has no `now_us`.
 
@@ -75,6 +78,7 @@ The firmware's own reference peers were swapped for each example on its bus.
 | `i2c/good_icp20100.py` | Run. Baro polled (about 7250 I2C transactions), run completes. |
 | `spi/good_icm42688.py` | Run on both IMUs. `ATTITUDE` pitch -10.47 deg, same as reference. |
 | `can/good_dronecan.py` | Run. 29 CAN frames, both directions, same as the reference. |
+| `i2c/good_lis2dw12.py` | Mock tests only (`tests/test_peer_mocks.py`); not yet run against firmware. |
 | `uart/faulty_uart.py` | Run. Completes. The firmware's RC output stayed at its failsafe values (1500/1500/1000/1500/1000...) for the whole run. With only truncated, garbage or bad-length faults mixed with valid frames it accepted the valid ones; with a bad-CRC frame in the stream it never did. Cause not investigated. |
 | `i2c/faulty_tf02.py` | Run. 724 faulty polls served; `DISTANCE_SENSOR` stayed 1250 cm (the 65535 frame never surfaced). The firmware never sent the version query, so the wrong-ID reply was not exercised. Address NACK works and the firmware recovers. |
 | `spi/faulty_icm42688.py` | Run on each IMU. On the IMU the firmware probes with WHO_AM_I the wrong ID disabled it: no `RAW_IMU`, pitch 0. The firmware never reads WHO_AM_I on the other IMU; there it read the FIFO count 4 and empty packets repeatedly without crashing. |
