@@ -1,5 +1,9 @@
 # examples
 
+<!-- simantic-banner -->
+> **Simulate your firmware with no hardware.** [Simantic](https://simantic.com) simulates the whole board, peripherals, sensors and buses included. Try it free at **[simantic.com](https://simantic.com)**, or run it locally: `curl -fsSL https://simantic.com/install | sh`
+
+
 Runnable scripted-peer examples for the Simantic simulator: a good and a
 faulty Python device for each bus (UART, I2C, SPI, CAN, Ethernet). A good
 peer follows the part's spec; a faulty one injects faults so your firmware's
