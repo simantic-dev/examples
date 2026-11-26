@@ -1,0 +1,13 @@
+// Three EtherCAT SubDevices (scripted ESCs) on the EMAC's segment; the slots only place them. Ring order sub1, sub2, sub3.
+sub1: Network.ScriptedEthernetPeer @ sysbus 0x60200000
+    file: "s32k344/ethercat/peer_sub1.py"
+    mac: "02:00:00:00:EC:01"
+sub2: Network.ScriptedEthernetPeer @ sysbus 0x60200100
+    file: "s32k344/ethercat/peer_sub2.py"
+    mac: "02:00:00:00:EC:02"
+sub3: Network.ScriptedEthernetPeer @ sysbus 0x60200200
+    file: "s32k344/ethercat/peer_sub3.py"
+    mac: "02:00:00:00:EC:03"
+// The board's NXP TJA1103 100BASE-T1 PHY (MDIO address 0x12, clause 45), link up at once.
+phy: Network.ScriptedMdioPhy @ emac 0x12
+    file: "peers/eth/tja1103.py"

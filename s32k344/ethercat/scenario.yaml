@@ -1,0 +1,13 @@
+# S32K344 (mr_canhubk3) as an EtherCAT MainDevice: SOEM v1.4.0 over the EMAC drives three chained scripted
+# SubDevices (peer_sub1..3.py -> peers/eth/ethercat_sub.py): config, SAFEOP, OP, 200 cyclic LRW at 1 ms.
+# Run from the repo root: sim run --scenario s32k344/ethercat/scenario.yaml --ascii
+machines:
+  dut:
+    mcu: S32K344
+    overlay: peers.board
+    elf: build/zephyr/zephyr.elf
+media:
+  - type: eth
+    connect: [dut.emac, dut.sub1, dut.sub2, dut.sub3]
+    pcap: ethercat.pcap
+timeout: 8

@@ -1,0 +1,7 @@
+// A scripted host (192.0.2.2) on the EMAC's Ethernet segment; the slot only places it.
+host: Network.ScriptedEthernetPeer @ sysbus 0x60200000
+    file: "s32k344/udp-echo/peer.py"
+    mac: "02:00:00:00:BE:EF"
+// The board's NXP TJA1103 100BASE-T1 PHY (MDIO address 0x12, clause 45), link up at once.
+phy: Network.ScriptedMdioPhy @ emac 0x12
+    file: "peers/eth/tja1103.py"

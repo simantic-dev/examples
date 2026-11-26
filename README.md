@@ -47,6 +47,10 @@ python -m pytest tests
 | CAN | `peers/can/good_dronecan.py`: DroneCAN anonymous node-ID allocation, then 1 Hz NodeStatus. | `peers/can/faulty_echo.py`: echoes each frame with a flipped last byte, wrong ID, short DLC, long DLC, then once clean. |
 | Ethernet | `peers/eth/good_arp_udp.py`: answers ARP, echoes UDP on port 7 with correct IPv4 and UDP checksums. | `peers/eth/faulty_frames.py`: bad FCS, runt, foreign MAC, bad IPv4 checksum, bad UDP checksum, between good frames. |
 
+Ethernet also has `peers/eth/tja1103.py` (NXP TJA1103 PHY on MDIO, clause 45), `peers/eth/udp_host.py` (an IPv4
+host with ARP) and `peers/eth/ethercat_sub.py` (a chainable EtherCAT SubDevice). They run in
+[`s32k344/`](s32k344/README.md): stock Zephyr UDP and an SOEM EtherCAT MainDevice on the NXP S32K344.
+
 `peers/scenario.yaml` wires the GPS, IMU and barometer peers to one machine
 (used by `tests/test_peers.py`).
 
