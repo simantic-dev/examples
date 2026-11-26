@@ -1,0 +1,13 @@
+# S32K344 (mr_canhubk3) running stock Zephyr echo_server (192.0.2.1:4242) against a scripted host (192.0.2.2,
+# peer.py) on one Ethernet segment. The board's TJA1103 PHY is the Python peer peers/eth/tja1103.py (peers.board).
+# Run from the repo root: sim run --scenario s32k344/udp-echo/scenario.yaml --ascii
+machines:
+  dut:
+    mcu: S32K344
+    overlay: peers.board
+    elf: build/zephyr/zephyr.elf
+media:
+  - type: eth
+    connect: [dut.emac, dut.host]
+    pcap: udp-echo.pcap
+timeout: 8
